@@ -43,30 +43,48 @@ router.get("/students/:instituteId", verifyToken, async (req, res) => {
 
 router.get("/top-courses", verifyToken, async (req, res) => {
   try {
-    const results = await Result.findAll({
-      attributes: [
+    const query = `
+      WITH CourseEnrollments AS (
+        SELECT 
+          r."academicYear",
+          r."courseId",
+          c.name as "courseName",
+          c.code as "courseCode",
+          COUNT(DISTINCT r."studentId") as "enrollmentCount",
+          RANK() OVER (PARTITION BY r."academicYear" ORDER BY COUNT(DISTINCT r."studentId") DESC, c.code ASC) as rank
+        FROM "Results" r
+        JOIN "Courses" c ON r."courseId" = c.id
+        GROUP BY r."academicYear", r."courseId", c.name, c.code
+      )
+      SELECT 
         "academicYear",
-        [sequelize.fn("COUNT", sequelize.col("studentId")), "enrollmentCount"],
-      ],
-      include: [
-        {
-          model: Course,
-          as: "course",
-          attributes: ["name", "code"],
-        },
-      ],
-      group: ["academicYear", "course.id", "course.name", "course.code"],
-      order: [
-        ["academicYear", "DESC"],
-        [sequelize.literal('"enrollmentCount"'), "DESC"],
-      ],
+        "courseName" as "course.name",
+        "courseCode" as "course.code",
+        "enrollmentCount",
+        rank
+      FROM CourseEnrollments
+      WHERE rank = 1
+      ORDER BY "academicYear" DESC
+    `;
+
+    const results = await sequelize.query(query, {
+      type: sequelize.QueryTypes.SELECT,
     });
+
+    const formattedResults = results.map((result) => ({
+      academicYear: result.academicYear,
+      enrollmentCount: parseInt(result.enrollmentCount),
+      course: {
+        name: result["course.name"],
+        code: result["course.code"],
+      },
+    }));
 
     res.json({
       status_code: 200,
       status: "success",
       data: {
-        results,
+        results: formattedResults,
       },
     });
   } catch (error) {
