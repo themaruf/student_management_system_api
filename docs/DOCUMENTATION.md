@@ -46,45 +46,81 @@ The system implements JWT (JSON Web Token) based authentication for secure API a
 
 ```sql
 -- Users Table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    last_login TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public."Users" (
+    id uuid NOT NULL,
+    email character varying(255) NOT NULL,
+    password character varying(255) NOT NULL,
+    "lastLogin" timestamp with time zone,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
 );
-
--- Institutes Table
-CREATE TABLE institutes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    address TEXT,
-    phone VARCHAR(20),
-    email VARCHAR(255),
-    status VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+ALTER TABLE public."Users" OWNER TO postgres;
 
 -- Courses Table
-CREATE TABLE courses (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    institute_id UUID REFERENCES institutes(id),
-    name VARCHAR(255) NOT NULL,
-    code VARCHAR(50) NOT NULL,
-    credits INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(institute_id, code)
+CREATE TABLE public."Courses" (
+    id uuid NOT NULL,
+    code character varying(255) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    credits integer NOT NULL,
+    status public."enum_Courses_status" DEFAULT 'active'::public."enum_Courses_status",
+    "startDate" date NOT NULL,
+    "endDate" date NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
 );
+ALTER TABLE public."Courses" OWNER TO postgres;
+
+-- Institutes Table
+CREATE TABLE public."Institutes" (
+    id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    code character varying(255) NOT NULL,
+    address text,
+    status public."enum_Institutes_status" DEFAULT 'active'::public."enum_Institutes_status",
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+ALTER TABLE public."Institutes" OWNER TO postgres;
+
+-- Results table
+CREATE TABLE public."Results" (
+    id uuid NOT NULL,
+    "studentId" uuid NOT NULL,
+    "courseId" uuid NOT NULL,
+    score numeric(5,2) NOT NULL,
+    "academicYear" integer NOT NULL,
+    semester public."enum_Results_semester" NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+ALTER TABLE public."Results" OWNER TO postgres;
+
+-- Students table
+CREATE TABLE public."Students" (
+    id uuid NOT NULL,
+    "instituteId" uuid NOT NULL,
+    "firstName" character varying(255) NOT NULL,
+    "lastName" character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    status public."enum_Students_status" DEFAULT 'active'::public."enum_Students_status",
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+ALTER TABLE public."Students" OWNER TO postgres;
 
 -- Create Indexes
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_institutes_code ON institutes(code);
-CREATE INDEX idx_courses_institute_id ON courses(institute_id);
-CREATE INDEX idx_courses_code ON courses(code);
+CREATE INDEX courses_code_idx ON public."Courses" USING btree (code);
+CREATE INDEX courses_status_idx ON public."Courses" USING btree (status);
+CREATE INDEX institutes_code_idx ON public."Institutes" USING btree (code);
+CREATE INDEX institutes_status_idx ON public."Institutes" USING btree (status);
+CREATE INDEX results_academic_semester_idx ON public."Results" USING btree ("academicYear", semester);
+CREATE INDEX results_course_idx ON public."Results" USING btree ("courseId");
+CREATE INDEX results_student_idx ON public."Results" USING btree ("studentId");
+CREATE INDEX students_email_idx ON public."Students" USING btree (email);
+CREATE INDEX students_institute_idx ON public."Students" USING btree ("instituteId");
+CREATE INDEX students_status_idx ON public."Students" USING btree (status);
+CREATE INDEX users_email_idx ON public."Users" USING btree (email);
 ```
 
 ## API Documentation
