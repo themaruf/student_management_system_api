@@ -2,6 +2,8 @@
 
 This project consists of an Node Express.js API backend. Follow these instructions to set up and run the application.
 
+For detailed documentation about JWT implementation, database schema, queries, and performance metrics, please refer to our [Documentation](docs/DOCUMENTATION.md).
+
 ## Prerequisites
 
 - Node.js (v14 or higher)
@@ -14,7 +16,7 @@ This project consists of an Node Express.js API backend. Follow these instructio
 /student_management_system_api
 ├── config/           # Configuration files
 ├── docs/            # Project documentation
-├── sql/             # SQL scripts and database dumps
+├── sql/            # SQL scripts and database dumps
 ├── src/
 │   ├── config/      # Application configuration
 │   ├── middleware/  # Express middleware
