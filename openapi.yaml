@@ -1,0 +1,1094 @@
+openapi: 3.0.0
+info:
+  title: Student Management System API
+  version: 1.0.0
+  description: |
+    Comprehensive API documentation for managing students, institutes, courses, and academic results
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  parameters:
+    studentIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    instituteIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    courseIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    resultIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        lastLogin:
+          type: string
+          format: date-time
+    Institute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [active, inactive]
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        instituteId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, inactive]
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        credits:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+    Result:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        academicYear:
+          type: integer
+        semester:
+          type: string
+          enum: [Spring, Summer, Fall]
+        studentId:
+          type: string
+          format: uuid
+        courseId:
+          type: string
+          format: uuid
+    Error:
+      type: object
+      properties:
+        status_code:
+          type: integer
+        status:
+          type: string
+        message:
+          type: string
+        error:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+                      token:
+                        type: string
+        400:
+          description: Validation error or user exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+                      token:
+                        type: string
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /institutes:
+    get:
+      tags: [Institutes]
+      summary: List all institutes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      institutes:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Institute"
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          pages:
+                            type: integer
+    post:
+      tags: [Institutes]
+      summary: Create new institute
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Institute"
+      responses:
+        201:
+          description: Institute created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      institute:
+                        $ref: "#/components/schemas/Institute"
+
+  /institutes/{id}:
+    get:
+      tags: [Institutes]
+      summary: Get institute by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/instituteIdParam"
+      responses:
+        200:
+          description: Institute details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      institute:
+                        $ref: "#/components/schemas/Institute"
+        404:
+          description: Institute not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [Institutes]
+      summary: Update institute
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/instituteIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Institute"
+      responses:
+        200:
+          description: Institute updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      institute:
+                        $ref: "#/components/schemas/Institute"
+        404:
+          description: Institute not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Institutes]
+      summary: Delete institute
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/instituteIdParam"
+      responses:
+        200:
+          description: Institute deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+        404:
+          description: Institute not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /students:
+    get:
+      tags: [Students]
+      summary: Get paginated students
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      students:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Student"
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          pages:
+                            type: integer
+    post:
+      tags: [Students]
+      summary: Create new student
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Student"
+      responses:
+        201:
+          description: Student created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      student:
+                        $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      tags: [Students]
+      summary: Get student by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/studentIdParam"
+      responses:
+        200:
+          description: Student details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      student:
+                        $ref: "#/components/schemas/Student"
+        404:
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [Students]
+      summary: Update student details
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/studentIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Student"
+      responses:
+        200:
+          description: Student updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      student:
+                        $ref: "#/components/schemas/Student"
+        404:
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Students]
+      summary: Delete student
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/studentIdParam"
+      responses:
+        200:
+          description: Student deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+        404:
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /courses:
+    get:
+      tags: [Courses]
+      summary: List all courses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      courses:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Course"
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          pages:
+                            type: integer
+    post:
+      tags: [Courses]
+      summary: Create new course
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Course"
+      responses:
+        201:
+          description: Course created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      course:
+                        $ref: "#/components/schemas/Course"
+
+  /courses/{id}:
+    get:
+      tags: [Courses]
+      summary: Get course by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/courseIdParam"
+      responses:
+        200:
+          description: Course details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      course:
+                        $ref: "#/components/schemas/Course"
+        404:
+          description: Course not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [Courses]
+      summary: Update course
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/courseIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Course"
+      responses:
+        200:
+          description: Course updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      course:
+                        $ref: "#/components/schemas/Course"
+        404:
+          description: Course not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Courses]
+      summary: Delete course
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/courseIdParam"
+      responses:
+        200:
+          description: Course deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+        404:
+          description: Course not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /results:
+    get:
+      tags: [Results]
+      summary: List all results
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Result"
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          pages:
+                            type: integer
+    post:
+      tags: [Results]
+      summary: Create new result
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Result"
+      responses:
+        201:
+          description: Result created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      result:
+                        $ref: "#/components/schemas/Result"
+
+  /results/{id}:
+    get:
+      tags: [Results]
+      summary: Get result by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/resultIdParam"
+      responses:
+        200:
+          description: Result details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      result:
+                        $ref: "#/components/schemas/Result"
+        404:
+          description: Result not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [Results]
+      summary: Update result
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/resultIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Result"
+      responses:
+        200:
+          description: Result updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      result:
+                        $ref: "#/components/schemas/Result"
+        404:
+          description: Result not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Results]
+      summary: Delete result
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/resultIdParam"
+      responses:
+        200:
+          description: Result deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+        404:
+          description: Result not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /reports/students/{instituteId}:
+    get:
+      tags: [Reports]
+      summary: Get students by institute
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/instituteIdParam"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Students list by institute
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      students:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Student"
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          pages:
+                            type: integer
+
+  /reports/top-courses:
+    get:
+      tags: [Reports]
+      summary: Get top courses by enrollment
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Top courses by enrollment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            academicYear:
+                              type: integer
+                            enrollmentCount:
+                              type: integer
+                            course:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                code:
+                                  type: string
+
+  /reports/top-students:
+    get:
+      tags: [Reports]
+      summary: Get top students by average score with ranking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: academicYear
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Top students by average score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status_code:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      students:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            instituteId:
+                              type: integer
+                            instituteName:
+                              type: string
+                            highestScore:
+                              type: string
+                            rank:
+                              type: integer
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          pages:
+                            type: integer
