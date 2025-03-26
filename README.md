@@ -11,8 +11,10 @@ This project consists of an Node Express.js API backend. Follow these instructio
 ## Project Structure
 
 ```
-/api
+/student_management_system_api
 ├── config/           # Configuration files
+├── docs/            # Project documentation
+├── sql/             # SQL scripts and database dumps
 ├── src/
 │   ├── config/      # Application configuration
 │   ├── middleware/  # Express middleware
@@ -27,10 +29,11 @@ This project consists of an Node Express.js API backend. Follow these instructio
 
 ## API Setup
 
-1. Navigate to the API directory:
+1. Clone the project and Navigate to the directory:
 
    ```bash
-   cd api
+   git clone https://github.com/themaruf/student_management_system_api.git
+   cd student_management_system_api
    ```
 
 2. Install dependencies:
